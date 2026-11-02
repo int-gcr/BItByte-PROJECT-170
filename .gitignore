@@ -1,0 +1,43 @@
+# ==============================================================================
+# GENERAL GITIGNORE FILES FOR PYTHON
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+.venv
+.pew
+.cache
+.pytest_cache/
+.env
+*.env
+.secrets
+local_settings.py
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.log
+*.sqlite3
+*.sqlite3-journal
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
