@@ -1,131 +1,204 @@
 # knn method implementation
 
-from collections import Counter
+import csv
+import heapq
 import math
-from preprocess import clean, load_split
+import os
+import re
+from collections import Counter
+
+# csv files are in the dataset folder next to the method folder
+DATASET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dataset")
 
 
-def load_data(filename):
-    texts, labels = load_split(filename)
-    data = []
+def clean(text):
+    text = re.sub(r"https?://\S+", " ", text.lower())
+    text = re.sub(r"[@#]\w+", " ", text)
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    return text.split()
 
-    for text, label in zip(texts, labels):
-      counts = Counter(clean(text))
-      data.append((counts, label))
 
-    return data
+K_CANDIDATES = [1, 3, 5, 7, 9, 11, 15, 21, 31, 41]
 
-def minkowski_distance(x, v, p):
-  # Missing tokens have a count of zero in the other document.
-  distance = 0.0
-  for token in set(x).union(v):
-    distance += abs(x.get(token, 0) - v.get(token, 0)) ** p
 
-  return math.pow(distance, 1 / p)
+def load_split(filename):
+  texts = []
+  labels = []
+  filename = os.path.join(DATASET_DIR, filename)
+  # newline="" keeps the carriage returns inside tweets from splitting records
+  with open(filename, encoding="utf-8", newline="") as file:
+    for row in csv.DictReader(file):
+      # skip broken fragments that have no valid label
+      if row.get("label") in ("0", "1"):
+        texts.append(row["text"])
+        labels.append(int(row["label"]))
 
-def classify(x, train_data, k, p):
-  distances = []
-  # calculate distance for each training data
-  for v,label in train_data:
-    distance = minkowski_distance(x, v, p)
-    if distance == -1:
-      continue
-    # append if valid
-    distances.append((distance,label))
+  return texts, labels
 
-  distances.sort(key=lambda item: item[0])
-  nearest_neighbors = distances[:k]
+# normalizes a vector to unit length using L2 norm, returns an empty vector if the input is all zeros
+def l2_normalize(vector):
+  norm = math.sqrt(sum(value * value for value in vector.values()))
+  if norm == 0:
+    return {}
 
-  rain_count = 0
-  no_rain_count = 0
+  return {token: value / norm for token, value in vector.items()}
 
-# Iterate through each distance and check the label
-  for d,label in nearest_neighbors:
+
+def build_idf(token_lists):
+  # document frequency is computed from the training set only
+  df = Counter()
+  for tokens in token_lists:
+    df.update(set(tokens))
+
+  n = len(token_lists)
+  return {token: math.log((1 + n) / (1 + count)) + 1 for token, count in df.items()}
+
+
+def vectorize(tokens, idf):
+  # tf-idf then l2 normalization so that tweet length does not matter
+  counts = Counter(token for token in tokens if token in idf)
+  vector = {token: count * idf[token] for token, count in counts.items()}
+
+  return l2_normalize(vector)
+
+
+def build_index(train_vectors):
+  # inverted index maps each token to the training documents that contain it
+  index = {}
+  for doc_id, vector in enumerate(train_vectors):
+    for token, weight in vector.items():
+      index.setdefault(token, []).append((doc_id, weight))
+
+  return index
+
+
+def nearest_labels(x, index, train_labels, k_max):
+  # cosine similarity of l2 normalized vectors is just the dot product
+  scores = [0.0] * len(train_labels)
+  for token, weight in x.items():
+    for doc_id, train_weight in index.get(token, []):
+      scores[doc_id] += weight * train_weight
+
+  # larger similarity means a smaller cosine distance
+  nearest = heapq.nlargest(k_max, range(len(scores)), key=scores.__getitem__)
+
+  return [train_labels[doc_id] for doc_id in nearest]
+
+
+def vote(neighbor_labels, k):
+  hate_count = 0
+  non_hate_count = 0
+
+  # iterate through each neighbor and check the label
+  for label in neighbor_labels[:k]:
     if label == 1:
-      rain_count += 1
+      hate_count += 1
     else:
-      no_rain_count += 1
+      non_hate_count += 1
 
-  # Return majority vote
-  if rain_count > no_rain_count:
+  # return majority vote
+  if hate_count > non_hate_count:
     return 1
   else:
     return 0
 
-# function to convert the text from initial num value
-# back to its actual label
-def label_to_text(label):
-  if label == 1:
-    return "rain"
+
+def get_neighbors(vectors, index, train_labels, k_max, default_label):
+  all_neighbors = []
+  for x in vectors:
+    # tweets with no known words fall back to the majority class
+    if not x:
+      all_neighbors.append([default_label] * k_max)
+    else:
+      all_neighbors.append(nearest_labels(x, index, train_labels, k_max))
+
+  return all_neighbors
+
+
+def compute_metrics(predicted_labels, actual_labels):
+  tp = tn = fp = fn = 0
+  for predicted, actual in zip(predicted_labels, actual_labels):
+    if predicted == 1 and actual == 1:
+      tp += 1
+    elif predicted == 0 and actual == 0:
+      tn += 1
+    elif predicted == 1 and actual == 0:
+      fp += 1
+    else:
+      fn += 1
+
+  accuracy = (tp + tn) / (tp + tn + fp + fn)
+  precision = tp / (tp + fp) if tp + fp > 0 else 0.0
+  recall = tp / (tp + fn) if tp + fn > 0 else 0.0
+  if precision + recall > 0:
+    f1 = 2 * precision * recall / (precision + recall)
   else:
-    return "no rain"
+    f1 = 0.0
+
+  return {
+    "tp": tp, "tn": tn, "fp": fp, "fn": fn,
+    "accuracy": accuracy * 100,
+    "precision": precision * 100,
+    "recall": recall * 100,
+    "f1": f1 * 100,
+  }
+
+
+def print_results(name, k, metrics):
+  print(f"{name.upper()} SET RESULTS (k = {k})")
+  print(f"Confusion matrix: TP = {metrics['tp']}  TN = {metrics['tn']}  "
+        f"FP = {metrics['fp']}  FN = {metrics['fn']}")
+  print(f"{'Model':<24}{'Accuracy':>10}{'Precision':>11}{'Recall':>9}{'F1-Score':>10}")
+  print(f"{'k-Nearest Neighbors':<24}{metrics['accuracy']:>9.2f}%"
+        f"{metrics['precision']:>10.2f}%{metrics['recall']:>8.2f}%"
+        f"{metrics['f1']:>9.2f}%")
+  print()
 
 
 # main program flow
 
 def main():
-  training_data = load_data("train.csv")
-  testing_data = load_data("test.csv")
+  train_texts, train_labels = load_split("train.csv")
+  valid_texts, valid_labels = load_split("valid.csv")
+  test_texts, test_labels = load_split("test.csv")
 
-  print(f"Number of training records: {len(training_data)}")
-  print(f"Number of testing records: {len(testing_data)}\n")
+  print(f"Number of training records: {len(train_labels)}")
+  print(f"Number of validation records: {len(valid_labels)}")
+  print(f"Number of testing records: {len(test_labels)}\n")
 
-  while True:
-    try:
-      value_k = int(input("Enter an odd value of k: "))
-    except ValueError:
-      print("Error: k must be a positive odd integer.")
-      continue
-    if value_k <= 0 or value_k % 2 == 0:
-      print("Error: k must be a positive odd integer.")
-    else:
-      break
-  while True:
-    try:
-      value_p = float(input("Enter the value of p for Minkowski distance: "))
-    except ValueError:
-      print("Error: p must be a number greater than or equal to 1.")
-      continue
-    if value_p < 1.0:
-      print("Error: p must be greater than or equal to 1.")
-    else:
-      break
-  print("\nClassifying test instances...\n")
+  # build the vocabulary and idf weights from training data only
+  train_tokens = [clean(text) for text in train_texts]
+  idf = build_idf(train_tokens)
+  train_vectors = [vectorize(tokens, idf) for tokens in train_tokens]
+  valid_vectors = [vectorize(clean(text), idf) for text in valid_texts]
+  test_vectors = [vectorize(clean(text), idf) for text in test_texts]
+  index = build_index(train_vectors)
+  default_label = Counter(train_labels).most_common(1)[0][0]
 
-  predicted_labels = []
-  actual_labels = []
-  for features, actual_label in testing_data:
-    predicted_labels.append(classify(features, training_data, value_k, value_p))
-    actual_labels.append(actual_label)
+  print("Finding nearest neighbors...\n")
+  k_max = max(K_CANDIDATES)
+  valid_neighbors = get_neighbors(valid_vectors, index, train_labels, k_max, default_label)
+  test_neighbors = get_neighbors(test_vectors, index, train_labels, k_max, default_label)
 
-  correct = sum(
-    predicted == actual
-    for predicted, actual in zip(predicted_labels, actual_labels)
-  )
-  incorrect = len(actual_labels) - correct
-  accuracy = correct / len(actual_labels) * 100
+  # choose k using the validation set so the test set stays untouched
+  best_k = K_CANDIDATES[0]
+  best_f1 = -1.0
+  print("Tuning k on the validation set")
+  for k in K_CANDIDATES:
+    predicted = [vote(neighbors, k) for neighbors in valid_neighbors]
+    f1 = compute_metrics(predicted, valid_labels)["f1"]
+    print(f"k = {k:<3} F1-Score = {f1:.2f}%")
+    if f1 > best_f1:
+      best_f1 = f1
+      best_k = k
+  print(f"\nSelected k = {best_k}\n")
 
-  print("KNN CLASSIFICATION RESULTS")
-  print("k = ", value_k)
-  print("p = ", value_p)
-  print()
-  print(f"Number of correct predictions: {correct}")
-  print(f"Number of incorrect predictions: {incorrect}")
-  print(f"Accuracy: {accuracy:.2f}%")
-  print()
-  print("Incorrect classifications")
-  print("Data Record #  Actual Predicted")
-  for i, (predicted, actual) in enumerate(zip(predicted_labels, actual_labels)):
-    if predicted != actual:
-      print(f"{i+1:^10} {label_to_text(actual):^13} {label_to_text(predicted)}")
+  valid_predicted = [vote(neighbors, best_k) for neighbors in valid_neighbors]
+  test_predicted = [vote(neighbors, best_k) for neighbors in test_neighbors]
+
+  print_results("Validation", best_k, compute_metrics(valid_predicted, valid_labels))
+  print_results("Test", best_k, compute_metrics(test_predicted, test_labels))
 
 
 if __name__ == "__main__":
   main()
-
-
-
-
-
-
-
