@@ -89,7 +89,8 @@ def draw_graphs(results):
 
 
 def main():
-  run_methods()
+  results = run_methods()
+  draw_graphs(results)
 
 
 if __name__ == "__main__":
