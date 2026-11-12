@@ -67,6 +67,7 @@ def to_desired(label):
 def perceptron(train_vectors, train_labels, vocab_size):
   # Step 1
   weights = initialization(BIAS, vocab_size)
+  epochs = []
 
   for epoch in range(1, MAX_EPOCH + 1):
     updates = 0
@@ -87,12 +88,13 @@ def perceptron(train_vectors, train_labels, vocab_size):
       # Step 5: next training data
 
     print(f"Epoch {epoch}: {updates} updates")
+    epochs.append((epoch, updates))
 
     # Step 6
     if convergence_check(updates):
-      return True, weights
+      return True, weights, epochs
 
-  return False, weights
+  return False, weights, epochs
 
 # Predict labels for a whole list of tweets
 def predict_all(vectors, weights):
@@ -109,22 +111,28 @@ def predict_all(vectors, weights):
   return predictions
 
 
-# Load all the raw text, build the vocabulary, and turn them into Bag-of-Words
-train_vectors, train_labels, valid_vectors, valid_labels, test_vectors, test_labels, vocabulary = prepare_data()
+def main():
+  # Load all the raw text, build the vocabulary, and turn them into Bag-of-Words
+  train_vectors, train_labels, valid_vectors, valid_labels, test_vectors, test_labels, vocabulary = prepare_data()
 
-# Convert word counts into TF-IDF scores so super common words don't mess up our math
-train_vectors, valid_vectors, test_vectors = prepare_tfidf(train_vectors, valid_vectors, test_vectors, len(vocabulary), NORMALIZE)
+  # Convert word counts into TF-IDF scores so super common words don't mess up our math
+  train_vectors, valid_vectors, test_vectors = prepare_tfidf(train_vectors, valid_vectors, test_vectors, len(vocabulary), NORMALIZE)
 
-# Train the perceptron
-print(f"\nPERCEPTRON (learning rate = {LEARNING_RATE}, bias = {BIAS}, max epoch = {MAX_EPOCH})")
-converged, weights = perceptron(train_vectors, train_labels, len(vocabulary))
+  # Train the perceptron
+  print(f"\nPERCEPTRON (learning rate = {LEARNING_RATE}, bias = {BIAS}, max epoch = {MAX_EPOCH})")
+  converged, weights, epochs = perceptron(train_vectors, train_labels, len(vocabulary))
 
-# If updates hit 0 before MAX_EPOCH, it means it found a clean boundary line between the classes
-if converged:
-  print("Data is linearly separable")
-else:
-  print("Data may not be linearly separable")
+  # If updates hit 0 before MAX_EPOCH, it means it found a clean boundary line between the classes
+  if converged:
+    print("Data is linearly separable")
+  else:
+    print("Data may not be linearly separable")
 
-# Finally, check how well our weights actually perform on data it hasn't learned from yet
-print_metrics("VALIDATION", valid_labels, predict_all(valid_vectors, weights))
-print_metrics("TEST", test_labels, predict_all(test_vectors, weights))
+  # Finally, check how well our weights actually perform on data it hasn't learned from yet
+  return {"VALIDATION": print_metrics("VALIDATION", valid_labels, predict_all(valid_vectors, weights)),
+          "TEST": print_metrics("TEST", test_labels, predict_all(test_vectors, weights)),
+          "epochs": epochs}
+
+
+if __name__ == "__main__":
+  main()

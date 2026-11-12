@@ -232,3 +232,5 @@ def print_metrics(split_name, actual_labels, predicted_labels):
   print("\t\tPredicted 0\tPredicted 1")
   print(f"Actual 0\t{tn}\t\t{fp}")
   print(f"Actual 1\t{fn}\t\t{tp}")
+
+  return {"printed": [round(x * 100, 2) for x in (accuracy, precision, recall, f1)], "matrix": [tn, fp, fn, tp]}

@@ -75,9 +75,17 @@ def classify_all(texts):
 
   return predictions
 
-valid_texts, valid_labels = load_split("valid.csv")
-test_texts, test_labels = load_split("test.csv")
-hate_dictionary, nonhate_dictionary, p_hate, p_nonhate, vocab_size, total_words_hate, total_words_nonhate = train()
+def main():
+  # classify_tweet reads these as globals, so main has to set the globals
+  global hate_dictionary, nonhate_dictionary, p_hate, p_nonhate, vocab_size, total_words_hate, total_words_nonhate
 
-print_metrics("VALIDATION", valid_labels, classify_all(valid_texts))
-print_metrics("TEST", test_labels, classify_all(test_texts))
+  valid_texts, valid_labels = load_split("valid.csv")
+  test_texts, test_labels = load_split("test.csv")
+  hate_dictionary, nonhate_dictionary, p_hate, p_nonhate, vocab_size, total_words_hate, total_words_nonhate = train()
+
+  return {"VALIDATION": print_metrics("VALIDATION", valid_labels, classify_all(valid_texts)),
+          "TEST": print_metrics("TEST", test_labels, classify_all(test_texts))}
+
+if __name__ == "__main__":
+  main()
+

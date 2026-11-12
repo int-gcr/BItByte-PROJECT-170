@@ -92,11 +92,13 @@ def main():
   # choose k using the validation set so the test set stays untouched
   best_k = K_CANDIDATES[0]
   best_f1 = -1.0
+  k_tuning = []
   print("\nTuning k on the validation set")
   for k in K_CANDIDATES:
     predicted = [vote(neighbors, k) for neighbors in valid_neighbors]
     f1 = f1_score(valid_labels, predicted)
     print(f"k = {k:<3} F1-Score = {f1 * 100:.2f}%")
+    k_tuning.append((k, round(f1 * 100, 2)))
     if f1 > best_f1:
       best_f1 = f1
       best_k = k
@@ -105,8 +107,9 @@ def main():
   valid_predicted = [vote(neighbors, best_k) for neighbors in valid_neighbors]
   test_predicted = [vote(neighbors, best_k) for neighbors in test_neighbors]
 
-  print_metrics("VALIDATION", valid_labels, valid_predicted)
-  print_metrics("TEST", test_labels, test_predicted)
+  return {"VALIDATION": print_metrics("VALIDATION", valid_labels, valid_predicted),
+          "TEST": print_metrics("TEST", test_labels, test_predicted),
+          "k_tuning": k_tuning, "selected_k": best_k}
 
 
 if __name__ == "__main__":
