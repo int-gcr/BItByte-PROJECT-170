@@ -548,7 +548,24 @@
       </div>
     </section>
 
-  </main>
+    <section id="discussion">
+      <h2>6. Discussion, Limitations, and Improvements</h2>
+      <ul>
+        <li><strong>Accuracy Masks Precision–Recall Trade-offs:</strong> On the test set, all three models fall within a narrow 0.97-percentage-point accuracy band (72.16% to 73.13%), yet their recall scores span nearly 19 percentage points (59.04% to 77.98%).</li>
+        <li><strong>Naïve Bayes (Best Overall F1 &amp; Recall):</strong> Achieved the highest test F1-score (73.35%) and recall (77.98%), catching 1,565 of 2,007 hate tweets. Its generative word-likelihood aggregation captures subtle lexical cues across Taglish vocabulary, though at the expense of higher false positives (695 non-hate tweets flagged).</li>
+        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figure 4, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence—confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
+        <li><strong>k-NN (Balanced Middle Ground):</strong> Achieved the highest validation accuracy (73.68%) and placed between Naïve Bayes and Perceptron on test precision (74.28%) and recall (63.18%).</li>
+        <li><strong>Dataset Limitations &amp; Noise:</strong> Exactly 146 identical tweet texts appear in the corpus with conflicting labels (~1.6% of rows), creating an inherent noise ceiling. Additionally, sarcasm and context-dependent political banter in Taglish limit unigram Bag-of-Words and TF-IDF representations.</li>
+      </ul>
+    </section>
 
-</body>
-</html>
+    <section id="conclusion">
+      <h2>7. Conclusion</h2>
+      <p>
+        We built an end-to-end Filipino hate speech classification pipeline from scratch comparing Naïve Bayes, k-NN, and the Perceptron across 18,464 election-related tweets. <strong>Multinomial Naïve Bayes</strong> achieved the strongest overall balance with a test F1-score of <strong>73.35%</strong> and recall of <strong>77.98%</strong>, making it the best choice when minimizing missed hate speech is the primary goal. Conversely, the <strong>Perceptron</strong> achieved the highest precision (<strong>77.30%</strong>), making it preferable when minimizing false censorship flags is critical.
+      </p>
+    </section>
+
+    <section id="references">
+      <h2>8. References &amp; Disclosures</h2>
+      <ul>
