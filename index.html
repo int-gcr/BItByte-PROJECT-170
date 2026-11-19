@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Filipino Hate Speech Classification | BItByte (CMSC 170)</title>
+  <style>
+    :root {
+      --primary: #1a365d;
+      --accent: #2b6cb0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding-bottom: 4rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #ffffff;
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+    }
+
+    header .course-tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: 2.1rem;
+      max-width: 820px;
+      margin: 0 auto 0.75rem auto;
+      line-height: 1.25;
+    }
+
+    header .members {
+      font-size: 1rem;
+      opacity: 0.92;
+      max-width: 750px;
+      margin: 0 auto 1.5rem auto;
+    }
+
+    .links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.88;
+    }
+
+    .btn-light {
+      background-color: #ffffff;
+      color: var(--primary);
+    }
+
+    .btn-outline {
+      border: 1.5px solid #ffffff;
+      color: #ffffff;
+    }
+
+    nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.65rem 1rem;
+      text-align: center;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0 0.75rem;
+    }
+
+    nav a:hover {
+      color: var(--accent);
+    }
+
+    main {
+      max-width: 920px;
+      margin: 2rem auto 0 auto;
+      padding: 0 1.25rem;
+    }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    h2 {
+      color: var(--primary);
+      font-size: 1.4rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.45rem;
+      margin-bottom: 1.15rem;
+    }
+
+    h3 {
+      color: var(--accent);
+      font-size: 1.08rem;
+      margin: 1.25rem 0 0.5rem 0;
+    }
+
+    p {
+      margin-bottom: 0.9rem;
+    }
+
+    ul, ol {
+      margin-left: 1.4rem;
+      margin-bottom: 1rem;
+    }
+
+    li {
+      margin-bottom: 0.45rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.15rem 0;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.8rem;
+      text-align: center;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    td:first-child, th:first-child {
+      text-align: left;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    .highlight-row {
+      font-weight: 700;
+      background-color: #edf2f7 !important;
+    }
+
+    .highlight-cell {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .formula-box {
+      background: #f1f5f9;
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1.1rem;
+      margin: 0.9rem 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.92rem;
+      overflow-x: auto;
+    }
+
+    .figure-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-top: 1.25rem;
+    }
+
+    figure {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      background: #ffffff;
+      text-align: center;
+    }
+
+    figure img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    figcaption {
+      margin-top: 0.65rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .note-banner {
+      background: #fefce8;
+      border: 1px solid #fef08a;
+      color: #854d0e;
+      padding: 0.85rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="course-tag">CMSC 170: Introduction to Artificial Intelligence &bull; Group BItByte</div>
+    <h1>Filipino Hate Speech Classification Using Naïve Bayes, k-NN, and Perceptron</h1>
+    <p class="members">
+      <strong>Members:</strong> Raymond Benedict Sariño (Leader), Ralph Benedict Crisostomo,
+      Braedan Anthony Jorge Paguirigan, Geoseffe Peter Rufo
+    </p>
+    <div class="links">
+      <a href="https://github.com/int-gcr/BItByte-PROJECT-170" target="_blank" class="btn btn-light">GitHub Repository</a>
+      <a href="https://huggingface.co/datasets/jcblaise/hatespeech_filipino" target="_blank" class="btn btn-outline">Hugging Face Dataset</a>
+      <a href="https://canva.link/jqfe8dr5f63nmt5" target="_blank" class="btn btn-outline">Presentation Slides</a>
+    </div>
+  </header>
+
+  <nav>
+    <a href="#problem">Problem</a>
+    <a href="#dataset">Dataset</a>
+    <a href="#methods">Methods</a>
+    <a href="#setup">Experimental Setup</a>
+    <a href="#results">Results</a>
+    <a href="#discussion">Discussion</a>
+    <a href="#conclusion">Conclusion</a>
+    <a href="#references">References</a>
+  </nav>
+
+  <main>
+  </main>
+
+</body>
+</html>
