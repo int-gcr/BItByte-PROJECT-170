@@ -271,6 +271,118 @@
   </nav>
 
   <main>
+
+    <section id="problem">
+      <h2>1. Problem Statement and Motivation</h2>
+      <p>
+        Online political discourse in the Philippines frequently involves a mix of Filipino, English, and code-switched Taglish. During high-stakes events such as national elections, social media platforms see a surge in targeted harassment, insults, and hate speech. Moderating this content manually is unscalable, yet off-the-shelf moderation models are predominantly trained on standard English and struggle with Philippine linguistic nuances.
+      </p>
+      <p>
+        <strong>Task Definition:</strong> We frame this problem as a supervised binary text classification task. Given a raw tweet in Filipino or Taglish, the model must classify it as either <strong>Non-hate (0)</strong> or <strong>Hate (1)</strong>. To understand how different learning paradigms handle sparse, code-switched text, we implement and compare three classical machine learning algorithms completely from scratch: <strong>Multinomial Naïve Bayes</strong>, <strong>k-Nearest Neighbors (k-NN)</strong>, and the <strong>Perceptron</strong>.
+      </p>
+    </section>
+
+    <section id="dataset">
+      <h2>2. Dataset Description and Preprocessing</h2>
+      <p>
+        <strong>Source &amp; License:</strong> We use the raw version (<code>hatespeech_raw.zip</code>) of the Filipino Hate Speech Dataset released by Cabasag et al. (2019) on Hugging Face under the Apache-2.0 license. The corpus consists of 18,464 tweets collected during the 2016 Philippine presidential election.
+      </p>
+      <p>
+        <strong>Target Labels:</strong> Each instance is annotated with a binary target label (Cruz and Cheng, 2020): <code>0</code> for non-hate and <code>1</code> for hate. In our inspection of the corpus, label <code>1</code> generally marks hostile or insulting posts aimed at political candidates or parties, whereas label <code>0</code> covers news updates, poll results, neutral questions, and supportive commentary. Profanity alone does not determine the label.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Split</th>
+            <th>Total Tweets</th>
+            <th>Share</th>
+            <th>Non-hate (0)</th>
+            <th>Hate (1)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Train</td>
+            <td>10,000</td>
+            <td>54.2%</td>
+            <td>5,340 (53.4%)</td>
+            <td>4,660 (46.6%)</td>
+          </tr>
+          <tr>
+            <td>Validation</td>
+            <td>4,232</td>
+            <td>22.9%</td>
+            <td>2,299 (54.3%)</td>
+            <td>1,933 (45.7%)</td>
+          </tr>
+          <tr>
+            <td>Test</td>
+            <td>4,232</td>
+            <td>22.9%</td>
+            <td>2,225 (52.6%)</td>
+            <td>2,007 (47.4%)</td>
+          </tr>
+          <tr class="highlight-row">
+            <td>Total</td>
+            <td>18,464</td>
+            <td>100%</td>
+            <td>9,864 (53.4%)</td>
+            <td>8,600 (46.6%)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>From-Scratch Preprocessing Pipeline</h3>
+      <ol>
+        <li><strong>Text Cleansing:</strong> Every tweet is lowercased, URLs and <code>@mentions</code> are stripped, non-alphanumeric characters (excluding spaces) are removed, and text is tokenized on whitespace. Stop words are retained to preserve Taglish grammatical and contextual cues.</li>
+        <li><strong>Vocabulary Construction:</strong> Built exclusively from the 10,000 training tweets to prevent data leakage, yielding <strong>15,943 unique tokens</strong>. Out-of-vocabulary words in validation and test splits are ignored.</li>
+        <li><strong>Feature Representation:</strong> Naïve Bayes operates on raw Bag-of-Words token counts. k-NN and the Perceptron use Term Frequency–Inverse Document Frequency (TF-IDF) features computed strictly from training document frequencies (<em>N</em> = 10,000).</li>
+        <li><strong>L2 Normalization:</strong> Each TF-IDF vector is scaled to unit Euclidean length so tweets of varying word counts are compared fairly.</li>
+      </ol>
+    </section>
+
+    <section id="methods">
+      <h2>3. Machine Learning Methods</h2>
+      <p>
+        All three algorithms were implemented from scratch using only Python's standard library (<code>csv</code>, <code>math</code>, <code>re</code>, <code>heapq</code>, <code>decimal</code>) without external ML libraries.
+      </p>
+
+      <h3>Multinomial Naïve Bayes</h3>
+      <p>
+        A generative probabilistic classifier that models word likelihoods given each class under the conditional independence assumption. Using <code>Decimal</code> arithmetic to avoid floating-point underflow on long tweets, it computes class log/product scores using training priors (<em>P</em>(Non-hate) = 0.534, <em>P</em>(Hate) = 0.466) and Laplace smoothing (smoothing parameter = 1) across the 15,943-word vocabulary.
+      </p>
+
+      <h3>k-Nearest Neighbors (k-NN)</h3>
+      <p>
+        An instance-based lazy learner that stores all 10,000 L2-normalized training TF-IDF vectors in memory. Because vectors are unit-normalized, computing cosine similarity reduces to a dot product, which yields the exact same neighbor ranking as Euclidean distance. To make inference efficient across 10,000 documents, we implemented an <strong>inverted index</strong> mapping each vocabulary word to the training documents containing it. The <em>k</em> most similar neighbors vote by majority rule; tweets with zero known vocabulary words default to the majority class (Non-hate).
+      </p>
+
+      <h3>Perceptron</h3>
+      <p>
+        A single-layer linear classifier that learns a weight vector across all 15,943 features plus a bias term (<em>w</em><sub>0</sub>), all initialized to 0.0. Using a step activation function (predicting Hate when weighted sum &ge; 0) and learning rate &eta; = 0.5, the model iterates sequentially through the training set and updates weights via <em>w</em> &larr; <em>w</em> + &eta;(<em>d</em> &minus; <em>y</em>)<em>x</em> whenever a classification mistake occurs.
+      </p>
+    </section>
+
+    <section id="setup">
+      <h2>4. Experimental Setup and Evaluation Metrics</h2>
+      <p>
+        <strong>Data Splits &amp; Tuning Protocol:</strong> We preserved the dataset's predefined split (10,000 train / 4,232 validation / 4,232 test). All feature statistics and model parameters were learned strictly on the training set. The validation set was used to select hyperparameters (specifically tuning odd values <em>k</em> &isin; {1, 3, 5, 7, 9, 11, 15, 21, 31, 41} for k-NN to avoid tied votes), leaving the test set completely untouched until final evaluation.
+      </p>
+      <p>
+        <strong>Custom Evaluation Metrics:</strong> Treating <strong>Hate (1)</strong> as the positive class, we implemented our own confusion matrix and metric routines:
+      </p>
+      <div class="formula-box">
+        Accuracy  = (TP + TN) / (TP + TN + FP + FN)<br>
+        Precision = TP / (TP + FP)<br>
+        Recall    = TP / (TP + FN)<br>
+        F1-Score  = 2 &times; (Precision &times; Recall) / (Precision + Recall)
+      </div>
+      <p>
+        Because a trivial majority-class baseline achieves 52.6% accuracy on the test set, we prioritize <strong>F1-Score</strong>—the harmonic mean of precision and recall—to balance the cost of missed hate speech (False Negatives) against false moderation flags (False Positives).
+      </p>
+    </section>
+
   </main>
 
 </body>
