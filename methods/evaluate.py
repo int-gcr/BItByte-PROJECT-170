@@ -13,7 +13,7 @@ import naive_bayes
 import perceptron
 
 
-FIGURES = "methods/results/figures"
+FIGURES = "results/figures"
 METHODS = ["Naive Bayes", "k-NN", "Perceptron"]
 LINE_COLOR = "blue"
 SELECTED_COLOR = "red"
@@ -190,7 +190,7 @@ def draw_metric_bars(results, split_name, title, file_name):
             color=metric_colors[m]
         )
 
-    ax.set_ylim(55, 85)
+    ax.set_ylim(0, 100)
     ax.set_xticks(range(len(METHODS)), METHODS)
     ax.set_ylabel("Percentage (%)")
     ax.set_title(
