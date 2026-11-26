@@ -13,7 +13,7 @@ import naive_bayes
 import perceptron
 
 
-FIGURES = "results/figures"
+FIGURES = "methods/results/figures"
 METHODS = ["Naive Bayes", "k-NN", "Perceptron"]
 LINE_COLOR = "blue"
 SELECTED_COLOR = "red"
