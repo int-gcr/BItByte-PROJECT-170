@@ -569,12 +569,24 @@
           <figcaption><strong>Figure 2:</strong> Test set performance comparison across Accuracy, Precision, Recall, and F1-Score.</figcaption>
         </figure>
         <figure>
+          <img src="methods/results/figures/valid_confusion_matrices.png" alt="Validation Set Confusion Matrices" />
+          <figcaption><strong>Figure 3:</strong> Validation set confusion matrices comparing True Negatives, False Positives, False Negatives, and True Positives across Naïve Bayes, k-NN, and Perceptron.</figcaption>
+        </figure>
+        <figure>
+          <img src="methods/results/figures/test_confusion_matrices.png" alt="Test Set Confusion Matrices" />
+          <figcaption><strong>Figure 4:</strong> Test set confusion matrices comparing classification outcomes across Naïve Bayes, k-NN, and Perceptron.</figcaption>
+        </figure>
+        <figure>
           <img src="methods/results/figures/knn_k_tuning.png" alt="k-NN Validation F1 Tuning" />
-          <figcaption><strong>Figure 3:</strong> Validation F1-Score across candidate neighborhood sizes <em>k</em> with the selected vote power <em>p</em> = 3 and threshold <em>t</em> = 0.42, peaking at <em>k</em> = 251 (75.26%). The curve flattens beyond <em>k</em> &asymp; 71 because distant neighbors carry little vote weight.</figcaption>
+          <figcaption><strong>Figure 5:</strong> Validation F1-Score across candidate neighborhood sizes <em>k</em> with the selected vote power <em>p</em> = 3 and threshold <em>t</em> = 0.42, peaking at <em>k</em> = 251 (75.26%). The curve flattens beyond <em>k</em> &asymp; 71 because distant neighbors carry little vote weight.</figcaption>
         </figure>
         <figure>
           <img src="methods/results/figures/perceptron_epochs.png" alt="Perceptron Training Updates per Epoch" />
-          <figcaption><strong>Figure 4:</strong> Perceptron training mistakes per epoch over 100 epochs (decreasing from 3,544 to 122 without reaching zero).</figcaption>
+          <figcaption><strong>Figure 6:</strong> Perceptron training mistakes per epoch over 100 epochs (decreasing from 3,544 to 122 without reaching zero).</figcaption>
+        </figure>
+        <figure>
+          <img src="methods/results/figures/perceptron_error_breakdown.png" alt="Perceptron Training Error Breakdown" />
+          <figcaption><strong>Figure 7:</strong> Remaining misclassified training tweets (total errors, false positives, and false negatives) after each Perceptron training epoch.</figcaption>
         </figure>
       </div>
     </section>
@@ -586,7 +598,7 @@
         <li><strong>k-NN (Best Overall F1, Accuracy &amp; Recall):</strong> With similarity-weighted voting and a tuned threshold, k-NN achieved the highest test F1-score (75.23%), accuracy (74.69%), and recall (81.02%), catching 1,626 of 2,007 hate tweets, at the cost of 690 false positives. In a paired bootstrap over the test set (2,000 resamples), its F1 advantage over Naïve Bayes averaged 1.97 points (95% CI 0.86 to 3.17).</li>
         <li><strong>Why the k-NN Changes Helped:</strong> The original majority-vote k-NN (<em>k</em> = 11) had high precision (74.28%) but low recall (63.18%), for a test F1 of only 68.28%. Two parts of the vote held it back: every neighbor counted equally, and Hate needed a strict majority with ties going to Non-hate, even though Hate makes up only 46.6% of the training set. Weighting each vote by similarity<sup>3</sup> lets the closest tweets dominate. Lowering the threshold to 0.42 trades a little precision for much higher recall. Together these raised test F1 by about 7 points without changing the features. We also tested feature changes (keeping mentions and hashtags, sublinear or binary term frequency, smoothed IDF, minimum document frequency, word bigrams, and character n-grams); none improved validation F1 by more than 0.5 points, so the original TF-IDF features were kept.</li>
         <li><strong>Naïve Bayes (Strong Second):</strong> Achieved a test F1-score of 73.35% and recall of 77.98%, catching 1,565 of 2,007 hate tweets. Its generative word-likelihood aggregation captures subtle lexical cues across Taglish vocabulary, though at the expense of higher false positives (695 non-hate tweets flagged). Giving Naïve Bayes the same decision-threshold tuning raised its test F1 only slightly (to about 73.7%), so k-NN's lead does not come from threshold tuning alone.</li>
-        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figure 4, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence, confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
+        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figures 6 and 7, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence, confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
         <li><strong>Dataset Limitations &amp; Noise:</strong> 145 distinct tweet texts appear more than once in the corpus with conflicting labels (290 rows, ~1.6% of the data), creating an inherent noise ceiling. After cleaning, about 5% of validation and test tweets (206 and 230) also appear in the training set, and roughly 1 in 5 of these carries a different label there. Additionally, sarcasm and context-dependent political banter in Taglish limit unigram Bag-of-Words and TF-IDF representations.</li>
       </ul>
     </section>

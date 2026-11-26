@@ -13,7 +13,7 @@ import naive_bayes
 import perceptron
 
 
-FIGURES = "methods/results/figures"
+FIGURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "figures")
 METHODS = ["Naive Bayes", "k-NN", "Perceptron"]
 LINE_COLOR = "blue"
 SELECTED_COLOR = "red"
@@ -209,6 +209,43 @@ def draw_metric_bars(results, split_name, title, file_name):
     clean_axes(ax)
     save(fig, file_name)
 
+def draw_confusion_matrices(results, split_name, title, file_name):
+    # Each model's matrix list is [tn, fp, fn, tp] from preprocess.print_metrics()
+    fig, axes = plt.subplots(1, len(METHODS), figsize=(11, 3.6))
+
+    for idx, method in enumerate(METHODS):
+        ax = axes[idx]
+        tn, fp, fn, tp = results[method][split_name]["matrix"]
+        grid = [
+            [tn, fp],  # Row 0: Actual Non-hate (0)
+            [fn, tp],  # Row 1: Actual Hate (1)
+        ]
+        total = tn + fp + fn + tp
+
+        im = ax.imshow(grid, cmap="Blues", vmin=0, vmax=total * 0.55)
+
+        for r in range(2):
+            for c in range(2):
+                count = grid[r][c]
+                pct = (count / total) * 100
+                text_color = "white" if count > total * 0.28 else "black"
+                ax.text(
+                    c, r,
+                    f"{count:,}\n({pct:.1f}%)",
+                    ha="center", va="center",
+                    color=text_color, fontsize=10, fontweight="bold"
+                )
+
+        ax.set_xticks([0, 1], ["Non-hate (0)", "Hate (1)"])
+        ax.set_yticks([0, 1], ["Non-hate (0)", "Hate (1)"])
+        ax.set_xlabel("Predicted Label")
+        if idx == 0:
+            ax.set_ylabel("Actual Label")
+        ax.set_title(method, fontsize=10, fontweight="bold")
+
+    fig.suptitle(title, fontsize=11, fontweight="bold", y=1.02)
+    save(fig, file_name)
+
 
 def draw_graphs(results):
     # k-NN graph
@@ -231,6 +268,21 @@ def draw_graphs(results):
         "TEST",
         "Test set comparison",
         "test_bar.png"
+    )
+
+    # Confusion matrix heatmaps
+    draw_confusion_matrices(
+        results,
+        "VALIDATION",
+        "Validation Set Confusion Matrices (4,232 tweets)",
+        "valid_confusion_matrices.png"
+    )
+
+    draw_confusion_matrices(
+        results,
+        "TEST",
+        "Test Set Confusion Matrices (4,232 tweets)",
+        "test_confusion_matrices.png"
     )
 
 
