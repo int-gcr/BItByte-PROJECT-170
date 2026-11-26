@@ -367,7 +367,7 @@
     <section id="setup">
       <h2>4. Experimental Setup and Evaluation Metrics</h2>
       <p>
-        <strong>Data Splits &amp; Tuning Protocol:</strong> We preserved the dataset's predefined split (10,000 train / 4,232 validation / 4,232 test). All feature statistics and model parameters were learned strictly on the training set. The validation set was used to select hyperparameters (specifically tuning odd values <em>k</em> &isin; {1, 3, 5, 7, 9, 11, 15, 21, 31, 41} for k-NN to avoid tied votes), leaving the test set completely untouched until final evaluation.
+        <strong>Data Splits &amp; Tuning Protocol:</strong> We preserved the dataset's predefined split (10,000 train / 4,232 validation / 4,232 test). All feature statistics and model parameters were learned strictly on the training set. The validation set was used to select hyperparameters (specifically tuning odd values <em>k</em> &isin; {1, 3, 5, 7, 9, 11, 13, 15, 21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 201, 501} for k-NN to avoid tied votes), leaving the test set completely untouched until final evaluation.
       </p>
       <p>
         <strong>Custom Evaluation Metrics:</strong> Treating <strong>Hate (1)</strong> as the positive class, we implemented our own confusion matrix and metric routines:
@@ -495,38 +495,60 @@
       </table>
 
       <h3>Table 4: k-NN Hyperparameter Tuning (Validation F1-Score)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>k</th>
-            <th>1</th>
-            <th>3</th>
-            <th>5</th>
-            <th>7</th>
-            <th>9</th>
-            <th style="background-color: #2b6cb0;">11</th>
-            <th>15</th>
-            <th>21</th>
-            <th>31</th>
-            <th>41</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Validation F1 (%)</strong></td>
-            <td>66.03</td>
-            <td>68.92</td>
-            <td>67.96</td>
-            <td>68.06</td>
-            <td>68.87</td>
-            <td class="highlight-cell">69.23</td>
-            <td>68.57</td>
-            <td>68.66</td>
-            <td>68.39</td>
-            <td>68.16</td>
-          </tr>
-        </tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>k</th>
+              <th>1</th>
+              <th>3</th>
+              <th>5</th>
+              <th>7</th>
+              <th>9</th>
+              <th style="background-color: #2b6cb0;">11</th>
+              <th>13</th>
+              <th>15</th>
+              <th>21</th>
+              <th>31</th>
+              <th>41</th>
+              <th>51</th>
+              <th>61</th>
+              <th>71</th>
+              <th>81</th>
+              <th>91</th>
+              <th>101</th>
+              <th>151</th>
+              <th>201</th>
+              <th>501</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Validation F1 (%)</strong></td>
+              <td>66.03</td>
+              <td>68.92</td>
+              <td>67.96</td>
+              <td>68.06</td>
+              <td>68.87</td>
+              <td class="highlight-cell">69.23</td>
+              <td>68.59</td>
+              <td>68.57</td>
+              <td>68.66</td>
+              <td>68.39</td>
+              <td>68.16</td>
+              <td>68.40</td>
+              <td>68.36</td>
+              <td>67.71</td>
+              <td>67.55</td>
+              <td>67.64</td>
+              <td>68.12</td>
+              <td>67.18</td>
+              <td>65.97</td>
+              <td>66.13</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <div class="figure-grid">
         <figure>
@@ -569,3 +591,13 @@
     <section id="references">
       <h2>8. References &amp; Disclosures</h2>
       <ul>
+        <li>Cabasag, N. V., Chan, V. R., Lim, S. C., Gonzales, M. E., &amp; Cheng, C. (2019). Hate speech in Philippine election-related tweets. <em>Philippine Computing Journal</em>, XIV(1).</li>
+        <li>Cruz, J. C. B., &amp; Cheng, C. (2020). Establishing baselines for text classification in low-resource languages. <em>arXiv:2005.02068</em>.</li>
+        <li>CMSC 170 Laboratory Modules: Lab 04 (Naïve Bayes), Lab 06 (Nearest-Neighbor Model), and Lab 08 (Perceptron).</li>
+      </ul>
+    </section>
+
+  </main>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ import heapq
 from collections import Counter
 from preprocess import prepare_data, prepare_tfidf, confusion_matrix, print_metrics
 
-K_CANDIDATES = [1, 3, 5, 7, 9, 11, 15, 21, 31, 41]
+K_CANDIDATES = [1, 3, 5, 7, 9, 11, 13, 15, 21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 201, 501]
 
 
 def build_index(train_vectors):
