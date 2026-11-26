@@ -91,6 +91,7 @@ def draw_k_tuning(results):
 
     ax.set_ylim(min(f1s) - 0.4, max(f1s) + 0.9)
     ax.set_xticks(positions, tick_labels)
+    ax.tick_params(axis="x", labelsize=5)  # Smaller bottom labels
     ax.set_xlabel("k (number of neighbours)")
     ax.set_ylabel("Validation F1-Score (%)")
     ax.set_title(
