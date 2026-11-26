@@ -414,10 +414,10 @@
           </tr>
           <tr>
             <td>Perceptron</td>
-            <td>73.11%</td>
-            <td class="highlight-cell">76.59%</td>
-            <td>59.23%</td>
-            <td>66.80%</td>
+            <td>69.78%</td>
+            <td class="highlight-cell">82.31%</td>
+            <td>43.09%</td>
+            <td>56.57%</td>
           </tr>
         </tbody>
       </table>
@@ -450,10 +450,10 @@
           </tr>
           <tr>
             <td>Perceptron</td>
-            <td>72.35%</td>
-            <td class="highlight-cell">77.30%</td>
-            <td>59.04%</td>
-            <td>66.95%</td>
+            <td>68.57%</td>
+            <td class="highlight-cell">82.21%</td>
+            <td>43.05%</td>
+            <td>56.51%</td>
           </tr>
         </tbody>
       </table>
@@ -486,15 +486,50 @@
           </tr>
           <tr>
             <td>Perceptron</td>
-            <td>1,877</td>
-            <td>348</td>
-            <td>822</td>
-            <td>1,185</td>
+            <td>2,038</td>
+            <td>187</td>
+            <td>1,143</td>
+            <td>864</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>Table 4: k-NN Hyperparameter Tuning (Validation F1-Score at p = 3, t = 0.42)</h3>
+      <h3>Table 4: Perceptron Confusion Matrices</h3>
+      <p>The following values show how the updated Perceptron classified the validation and test tweets. Hate (1) is treated as the positive class.</p>
+      <table>
+        <thead>
+          <tr><th>Split</th><th>True Negatives (TN)</th><th>False Positives (FP)</th><th>False Negatives (FN)</th><th>True Positives (TP)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Validation</td><td>2,120</td><td>179</td><td>1,100</td><td>833</td></tr>
+          <tr><td>Test</td><td>2,038</td><td>187</td><td>1,143</td><td>864</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Table 5: Top 15 Words in Misclassified Perceptron Training Tweets</h3>
+      <p>These are the 15 most frequent words found in the training tweets that the Perceptron misclassified. The counts indicate how often each word appeared among those misclassified tweets; they do not, by themselves, show that a word caused the classification error.</p>
+      <table>
+        <thead><tr><th>Word</th><th>Count in Misclassified Tweets</th></tr></thead>
+        <tbody>
+          <tr><td>binay</td><td>1,257</td></tr>
+          <tr><td>roxas</td><td>678</td></tr>
+          <tr><td>mar</td><td>606</td></tr>
+          <tr><td>si</td><td>489</td></tr>
+          <tr><td>sa</td><td>427</td></tr>
+          <tr><td>na</td><td>417</td></tr>
+          <tr><td>ni</td><td>317</td></tr>
+          <tr><td>ang</td><td>315</td></tr>
+          <tr><td>ng</td><td>267</td></tr>
+          <tr><td>the</td><td>248</td></tr>
+          <tr><td>to</td><td>225</td></tr>
+          <tr><td>poe</td><td>213</td></tr>
+          <tr><td>lang</td><td>196</td></tr>
+          <tr><td>duterte</td><td>190</td></tr>
+          <tr><td>ka</td><td>176</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Table 6: k-NN Hyperparameter Tuning (Validation F1-Score at p = 3, t = 0.42)</h3>
       <div style="overflow-x: auto;">
         <table>
           <thead>
@@ -582,7 +617,7 @@
         </figure>
         <figure>
           <img src="methods/results/figures/perceptron_epochs.png" alt="Perceptron Training Updates per Epoch" />
-          <figcaption><strong>Figure 6:</strong> Perceptron training mistakes per epoch over 100 epochs (decreasing from 3,544 to 122 without reaching zero).</figcaption>
+          <figcaption><strong>Figure 6:</strong> Perceptron training mistakes per epoch. The model did not converge because training errors remained at the epoch limit.</figcaption>
         </figure>
         <figure>
           <img src="methods/results/figures/perceptron_error_breakdown.png" alt="Perceptron Training Error Breakdown" />
@@ -594,11 +629,12 @@
     <section id="discussion">
       <h2>6. Discussion, Limitations, and Improvements</h2>
       <ul>
-        <li><strong>Accuracy Masks Precision–Recall Trade-offs:</strong> On the test set, all three models fall within a 2.34-percentage-point accuracy band (72.35% to 74.69%), yet their recall scores span nearly 22 percentage points (59.04% to 81.02%).</li>
+        <li><strong>Accuracy Masks Precision–Recall Trade-offs:</strong> On the test set, the models' accuracy scores range from 68.57% to 74.69%, while their recall scores range from 43.05% to 81.02%. This shows why accuracy alone does not fully describe classification performance.</li>
         <li><strong>k-NN (Best Overall F1, Accuracy &amp; Recall):</strong> With similarity-weighted voting and a tuned threshold, k-NN achieved the highest test F1-score (75.23%), accuracy (74.69%), and recall (81.02%), catching 1,626 of 2,007 hate tweets, at the cost of 690 false positives. In a paired bootstrap over the test set (2,000 resamples), its F1 advantage over Naïve Bayes averaged 1.97 points (95% CI 0.86 to 3.17).</li>
         <li><strong>Why the k-NN Changes Helped:</strong> The original majority-vote k-NN (<em>k</em> = 11) had high precision (74.28%) but low recall (63.18%), for a test F1 of only 68.28%. Two parts of the vote held it back: every neighbor counted equally, and Hate needed a strict majority with ties going to Non-hate, even though Hate makes up only 46.6% of the training set. Weighting each vote by similarity<sup>3</sup> lets the closest tweets dominate. Lowering the threshold to 0.42 trades a little precision for much higher recall. Together these raised test F1 by about 7 points without changing the features. We also tested feature changes (keeping mentions and hashtags, sublinear or binary term frequency, smoothed IDF, minimum document frequency, word bigrams, and character n-grams); none improved validation F1 by more than 0.5 points, so the original TF-IDF features were kept.</li>
         <li><strong>Naïve Bayes (Strong Second):</strong> Achieved a test F1-score of 73.35% and recall of 77.98%, catching 1,565 of 2,007 hate tweets. Its generative word-likelihood aggregation captures subtle lexical cues across Taglish vocabulary, though at the expense of higher false positives (695 non-hate tweets flagged). Giving Naïve Bayes the same decision-threshold tuning raised its test F1 only slightly (to about 73.7%), so k-NN's lead does not come from threshold tuning alone.</li>
-        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figures 6 and 7, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence, confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
+        <li><strong>Perceptron (Highest Precision, Lowest Recall):</strong> Achieved the highest test precision (82.21%) with only 187 false positives, meaning that most tweets it flagged as hate were actually hate. However, its recall was only 43.05%, and it missed 1,143 of the 2,007 actual hate tweets. Its test F1-score was 56.51%, the lowest among the three models. The model did not converge because it continued to make training errors at the epoch limit. This indicates that the current linear model and feature representation were unable to correctly separate all training examples.</li>
+        <li><strong>Perceptron Training Errors and Frequent Words:</strong> The Perceptron did not converge because it still made training errors when it reached the epoch limit. Among the misclassified training tweets, the most frequent terms included political names such as <em>binay</em>, <em>roxas</em>, <em>mar</em>, <em>poe</em>, and <em>duterte</em>, alongside common Filipino/English words such as <em>si</em>, <em>sa</em>, <em>na</em>, <em>ang</em>, <em>ng</em>, <em>the</em>, and <em>to</em>. This frequency list is descriptive: it highlights recurring vocabulary in errors, but does not establish that these words alone caused the misclassifications.</li>
         <li><strong>Dataset Limitations &amp; Noise:</strong> 145 distinct tweet texts appear more than once in the corpus with conflicting labels (290 rows, ~1.6% of the data), creating an inherent noise ceiling. After cleaning, about 5% of validation and test tweets (206 and 230) also appear in the training set, and roughly 1 in 5 of these carries a different label there. Additionally, sarcasm and context-dependent political banter in Taglish limit unigram Bag-of-Words and TF-IDF representations.</li>
       </ul>
     </section>
@@ -606,7 +642,7 @@
     <section id="conclusion">
       <h2>7. Conclusion</h2>
       <p>
-        We built an end-to-end Filipino hate speech classification pipeline from scratch comparing Naïve Bayes, k-NN, and the Perceptron across 18,464 election-related tweets. <strong>k-Nearest Neighbors</strong> with similarity-weighted voting and a validation-tuned decision threshold (<em>k</em> = 251, <em>p</em> = 3, <em>t</em> = 0.42) achieved the strongest overall balance, with a test F1-score of <strong>75.23%</strong>, accuracy of <strong>74.69%</strong>, and recall of <strong>81.02%</strong>. That makes it the best choice when minimizing missed hate speech is the primary goal. <strong>Multinomial Naïve Bayes</strong> followed closely (73.35% F1) and remains the simplest and fastest of the three. The <strong>Perceptron</strong> achieved the highest precision (<strong>77.30%</strong>), making it preferable when minimizing false censorship flags is critical. Our k-NN results also show that how neighbors vote can matter as much as how many neighbors are used.
+        We built an end-to-end Filipino hate speech classification pipeline from scratch comparing Naïve Bayes, k-NN, and the Perceptron across 18,464 election-related tweets. <strong>k-Nearest Neighbors</strong> with similarity-weighted voting and a validation-tuned decision threshold (<em>k</em> = 251, <em>p</em> = 3, <em>t</em> = 0.42) achieved the strongest overall balance, with a test F1-score of <strong>75.23%</strong>, accuracy of <strong>74.69%</strong>, and recall of <strong>81.02%</strong>. That makes it the best choice when minimizing missed hate speech is the primary goal. <strong>Multinomial Naïve Bayes</strong> followed closely (73.35% F1) and remains the simplest and fastest of the three. The <strong>Perceptron</strong> achieved the highest test precision (<strong>82.21%</strong>) but had a much lower recall (<strong>43.05%</strong>) and F1-score (<strong>56.51%</strong>), reflecting its tendency to make fewer false-positive predictions while missing many actual hate tweets. Our k-NN results also show that how neighbors vote can matter as much as how many neighbors are used.
       </p>
     </section>
 
