@@ -355,7 +355,7 @@
 
       <h3>k-Nearest Neighbors (k-NN)</h3>
       <p>
-        An instance-based lazy learner that stores all 10,000 L2-normalized training TF-IDF vectors in memory. Because vectors are unit-normalized, computing cosine similarity reduces to a dot product, which yields the exact same neighbor ranking as Euclidean distance. To make inference efficient across 10,000 documents, we implemented an <strong>inverted index</strong> mapping each vocabulary word to the training documents containing it. The <em>k</em> most similar neighbors vote by majority rule; tweets with zero known vocabulary words default to the majority class (Non-hate).
+        An instance-based lazy learner that stores all 10,000 L2-normalized training TF-IDF vectors in memory. Because vectors are unit-normalized, computing cosine similarity reduces to a dot product, which yields the exact same neighbor ranking as Euclidean distance. To make inference efficient across 10,000 documents, we implemented an <strong>inverted index</strong> mapping each vocabulary word to the training documents containing it. Instead of a plain majority vote, the <em>k</em> most similar neighbors cast a <strong>similarity-weighted vote</strong>: each neighbor's vote counts as its cosine similarity raised to a power <em>p</em>, so closer tweets count far more than distant ones (with <em>p</em> = 3, a neighbor with similarity 0.5 counts eight times as much as one with similarity 0.25). A tweet is labeled Hate when Hate receives at least a fraction <em>t</em> of the total weighted vote. Setting <em>p</em> = 0 and <em>t</em> = 0.5 recovers the ordinary majority vote. Tweets with zero known vocabulary words default to the majority class (Non-hate).
       </p>
 
       <h3>Perceptron</h3>
@@ -367,7 +367,7 @@
     <section id="setup">
       <h2>4. Experimental Setup and Evaluation Metrics</h2>
       <p>
-        <strong>Data Splits &amp; Tuning Protocol:</strong> We preserved the dataset's predefined split (10,000 train / 4,232 validation / 4,232 test). All feature statistics and model parameters were learned strictly on the training set. The validation set was used to select hyperparameters (specifically tuning odd values <em>k</em> &isin; {1, 3, 5, 7, 9, 11, 15, 21, 31, 41} for k-NN to avoid tied votes), leaving the test set completely untouched until final evaluation.
+        <strong>Data Splits &amp; Tuning Protocol:</strong> We preserved the dataset's predefined split (10,000 train / 4,232 validation / 4,232 test). All feature statistics and model parameters were learned strictly on the training set. The validation set was used to select hyperparameters, leaving the test set completely untouched until final evaluation. For k-NN we ran a grid search over three settings: neighborhood size <em>k</em> &isin; {1, 3, 5, 7, 9, 11, 13, 15, 21, 31, 41, 51, 61, 71, 81, 91, 101, 151, 201, 251, 301, 401, 501}, vote-weight power <em>p</em> &isin; {0, 1, 2, 3, 5}, and decision threshold <em>t</em> &isin; {0.30, 0.32, &hellip;, 0.60}, for 1,840 combinations in total. Odd values of <em>k</em> were kept for consistency with the plain majority vote; with similarity weights, exact ties are practically impossible. The selected setting was <strong><em>k</em> = 251, <em>p</em> = 3, <em>t</em> = 0.42</strong>.
       </p>
       <p>
         <strong>Custom Evaluation Metrics:</strong> Treating <strong>Hate (1)</strong> as the positive class, we implemented our own confusion matrix and metric routines:
@@ -402,15 +402,15 @@
             <td>Naïve Bayes</td>
             <td>72.52%</td>
             <td>67.17%</td>
-            <td class="highlight-cell">77.91%</td>
-            <td class="highlight-cell">72.14%</td>
+            <td>77.91%</td>
+            <td>72.14%</td>
           </tr>
           <tr>
-            <td>k-Nearest Neighbors (k = 11)</td>
-            <td class="highlight-cell">73.68%</td>
-            <td>74.27%</td>
-            <td>64.82%</td>
-            <td>69.23%</td>
+            <td>k-Nearest Neighbors (k = 251, p = 3, t = 0.42)</td>
+            <td class="highlight-cell">75.05%</td>
+            <td>68.78%</td>
+            <td class="highlight-cell">83.08%</td>
+            <td class="highlight-cell">75.26%</td>
           </tr>
           <tr>
             <td>Perceptron</td>
@@ -436,17 +436,17 @@
         <tbody>
           <tr>
             <td>Naïve Bayes</td>
-            <td class="highlight-cell">73.13%</td>
+            <td>73.13%</td>
             <td>69.25%</td>
-            <td class="highlight-cell">77.98%</td>
-            <td class="highlight-cell">73.35%</td>
+            <td>77.98%</td>
+            <td>73.35%</td>
           </tr>
           <tr>
-            <td>k-Nearest Neighbors (k = 11)</td>
-            <td>72.16%</td>
-            <td>74.28%</td>
-            <td>63.18%</td>
-            <td>68.28%</td>
+            <td>k-Nearest Neighbors (k = 251, p = 3, t = 0.42)</td>
+            <td class="highlight-cell">74.69%</td>
+            <td>70.21%</td>
+            <td class="highlight-cell">81.02%</td>
+            <td class="highlight-cell">75.23%</td>
           </tr>
           <tr>
             <td>Perceptron</td>
@@ -478,11 +478,11 @@
             <td>1,565</td>
           </tr>
           <tr>
-            <td>k-Nearest Neighbors (k = 11)</td>
-            <td>1,786</td>
-            <td>439</td>
-            <td>739</td>
-            <td>1,268</td>
+            <td>k-Nearest Neighbors (k = 251, p = 3, t = 0.42)</td>
+            <td>1,535</td>
+            <td>690</td>
+            <td>381</td>
+            <td>1,626</td>
           </tr>
           <tr>
             <td>Perceptron</td>
@@ -494,39 +494,70 @@
         </tbody>
       </table>
 
-      <h3>Table 4: k-NN Hyperparameter Tuning (Validation F1-Score)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>k</th>
-            <th>1</th>
-            <th>3</th>
-            <th>5</th>
-            <th>7</th>
-            <th>9</th>
-            <th style="background-color: #2b6cb0;">11</th>
-            <th>15</th>
-            <th>21</th>
-            <th>31</th>
-            <th>41</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Validation F1 (%)</strong></td>
-            <td>66.03</td>
-            <td>68.92</td>
-            <td>67.96</td>
-            <td>68.06</td>
-            <td>68.87</td>
-            <td class="highlight-cell">69.23</td>
-            <td>68.57</td>
-            <td>68.66</td>
-            <td>68.39</td>
-            <td>68.16</td>
-          </tr>
-        </tbody>
-      </table>
+      <h3>Table 4: k-NN Hyperparameter Tuning (Validation F1-Score at p = 3, t = 0.42)</h3>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>k</th>
+              <th>1</th>
+              <th>3</th>
+              <th>5</th>
+              <th>7</th>
+              <th>9</th>
+              <th>11</th>
+              <th>13</th>
+              <th>15</th>
+              <th>21</th>
+              <th>31</th>
+              <th>41</th>
+              <th>51</th>
+              <th>61</th>
+              <th>71</th>
+              <th>81</th>
+              <th>91</th>
+              <th>101</th>
+              <th>151</th>
+              <th>201</th>
+              <th style="background-color: #2b6cb0;">251</th>
+              <th>301</th>
+              <th>401</th>
+              <th>501</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Validation F1 (%)</strong></td>
+              <td>66.03</td>
+              <td>69.76</td>
+              <td>70.69</td>
+              <td>71.86</td>
+              <td>72.24</td>
+              <td>72.34</td>
+              <td>72.73</td>
+              <td>73.16</td>
+              <td>73.42</td>
+              <td>73.89</td>
+              <td>74.04</td>
+              <td>74.07</td>
+              <td>74.46</td>
+              <td>74.66</td>
+              <td>74.62</td>
+              <td>74.73</td>
+              <td>74.71</td>
+              <td>75.12</td>
+              <td>74.98</td>
+              <td class="highlight-cell">75.26</td>
+              <td>74.85</td>
+              <td>75.02</td>
+              <td>74.91</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        For comparison, the plain majority vote (<em>p</em> = 0, <em>t</em> = 0.5) peaked at only <strong>69.23%</strong> validation F1 (at <em>k</em> = 11), giving 68.28% test F1. The weighted vote with a tuned threshold raised validation F1 by about 6 points. Validation F1 stays between 74.6% and 75.3% for every <em>k</em> from 71 to 501, so the result does not depend on one lucky value of <em>k</em>.
+      </p>
 
       <div class="figure-grid">
         <figure>
@@ -539,7 +570,7 @@
         </figure>
         <figure>
           <img src="methods/results/figures/knn_k_tuning.png" alt="k-NN Validation F1 Tuning" />
-          <figcaption><strong>Figure 3:</strong> Validation F1-Score across candidate neighborhood sizes <em>k</em>, peaking at <em>k</em> = 11 (69.23%).</figcaption>
+          <figcaption><strong>Figure 3:</strong> Validation F1-Score across candidate neighborhood sizes <em>k</em> with the selected vote power <em>p</em> = 3 and threshold <em>t</em> = 0.42, peaking at <em>k</em> = 251 (75.26%). The curve flattens beyond <em>k</em> &asymp; 71 because distant neighbors carry little vote weight.</figcaption>
         </figure>
         <figure>
           <img src="methods/results/figures/perceptron_epochs.png" alt="Perceptron Training Updates per Epoch" />
@@ -551,21 +582,32 @@
     <section id="discussion">
       <h2>6. Discussion, Limitations, and Improvements</h2>
       <ul>
-        <li><strong>Accuracy Masks Precision–Recall Trade-offs:</strong> On the test set, all three models fall within a narrow 0.97-percentage-point accuracy band (72.16% to 73.13%), yet their recall scores span nearly 19 percentage points (59.04% to 77.98%).</li>
-        <li><strong>Naïve Bayes (Best Overall F1 &amp; Recall):</strong> Achieved the highest test F1-score (73.35%) and recall (77.98%), catching 1,565 of 2,007 hate tweets. Its generative word-likelihood aggregation captures subtle lexical cues across Taglish vocabulary, though at the expense of higher false positives (695 non-hate tweets flagged).</li>
-        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figure 4, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence—confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
-        <li><strong>k-NN (Balanced Middle Ground):</strong> Achieved the highest validation accuracy (73.68%) and placed between Naïve Bayes and Perceptron on test precision (74.28%) and recall (63.18%).</li>
-        <li><strong>Dataset Limitations &amp; Noise:</strong> Exactly 146 identical tweet texts appear in the corpus with conflicting labels (~1.6% of rows), creating an inherent noise ceiling. Additionally, sarcasm and context-dependent political banter in Taglish limit unigram Bag-of-Words and TF-IDF representations.</li>
+        <li><strong>Accuracy Masks Precision–Recall Trade-offs:</strong> On the test set, all three models fall within a 2.34-percentage-point accuracy band (72.35% to 74.69%), yet their recall scores span nearly 22 percentage points (59.04% to 81.02%).</li>
+        <li><strong>k-NN (Best Overall F1, Accuracy &amp; Recall):</strong> With similarity-weighted voting and a tuned threshold, k-NN achieved the highest test F1-score (75.23%), accuracy (74.69%), and recall (81.02%), catching 1,626 of 2,007 hate tweets, at the cost of 690 false positives. In a paired bootstrap over the test set (2,000 resamples), its F1 advantage over Naïve Bayes averaged 1.97 points (95% CI 0.86 to 3.17).</li>
+        <li><strong>Why the k-NN Changes Helped:</strong> The original majority-vote k-NN (<em>k</em> = 11) had high precision (74.28%) but low recall (63.18%), for a test F1 of only 68.28%. Two parts of the vote held it back: every neighbor counted equally, and Hate needed a strict majority with ties going to Non-hate, even though Hate makes up only 46.6% of the training set. Weighting each vote by similarity<sup>3</sup> lets the closest tweets dominate. Lowering the threshold to 0.42 trades a little precision for much higher recall. Together these raised test F1 by about 7 points without changing the features. We also tested feature changes (keeping mentions and hashtags, sublinear or binary term frequency, smoothed IDF, minimum document frequency, word bigrams, and character n-grams); none improved validation F1 by more than 0.5 points, so the original TF-IDF features were kept.</li>
+        <li><strong>Naïve Bayes (Strong Second):</strong> Achieved a test F1-score of 73.35% and recall of 77.98%, catching 1,565 of 2,007 hate tweets. Its generative word-likelihood aggregation captures subtle lexical cues across Taglish vocabulary, though at the expense of higher false positives (695 non-hate tweets flagged). Giving Naïve Bayes the same decision-threshold tuning raised its test F1 only slightly (to about 73.7%), so k-NN's lead does not come from threshold tuning alone.</li>
+        <li><strong>Perceptron (Highest Precision, Non-Linear Separability):</strong> Achieved the highest test precision (77.30%) with only 348 false alarms, but missed 41% of actual hate tweets (recall 59.04%). As shown in Figure 4, training mistakes dropped from 3,544 in epoch 1 to 122 in epoch 100 without reaching convergence, confirming that high-dimensional TF-IDF tweet representations are not linearly separable.</li>
+        <li><strong>Dataset Limitations &amp; Noise:</strong> 145 distinct tweet texts appear more than once in the corpus with conflicting labels (290 rows, ~1.6% of the data), creating an inherent noise ceiling. After cleaning, about 5% of validation and test tweets (206 and 230) also appear in the training set, and roughly 1 in 5 of these carries a different label there. Additionally, sarcasm and context-dependent political banter in Taglish limit unigram Bag-of-Words and TF-IDF representations.</li>
       </ul>
     </section>
 
     <section id="conclusion">
       <h2>7. Conclusion</h2>
       <p>
-        We built an end-to-end Filipino hate speech classification pipeline from scratch comparing Naïve Bayes, k-NN, and the Perceptron across 18,464 election-related tweets. <strong>Multinomial Naïve Bayes</strong> achieved the strongest overall balance with a test F1-score of <strong>73.35%</strong> and recall of <strong>77.98%</strong>, making it the best choice when minimizing missed hate speech is the primary goal. Conversely, the <strong>Perceptron</strong> achieved the highest precision (<strong>77.30%</strong>), making it preferable when minimizing false censorship flags is critical.
+        We built an end-to-end Filipino hate speech classification pipeline from scratch comparing Naïve Bayes, k-NN, and the Perceptron across 18,464 election-related tweets. <strong>k-Nearest Neighbors</strong> with similarity-weighted voting and a validation-tuned decision threshold (<em>k</em> = 251, <em>p</em> = 3, <em>t</em> = 0.42) achieved the strongest overall balance, with a test F1-score of <strong>75.23%</strong>, accuracy of <strong>74.69%</strong>, and recall of <strong>81.02%</strong>. That makes it the best choice when minimizing missed hate speech is the primary goal. <strong>Multinomial Naïve Bayes</strong> followed closely (73.35% F1) and remains the simplest and fastest of the three. The <strong>Perceptron</strong> achieved the highest precision (<strong>77.30%</strong>), making it preferable when minimizing false censorship flags is critical. Our k-NN results also show that how neighbors vote can matter as much as how many neighbors are used.
       </p>
     </section>
 
     <section id="references">
       <h2>8. References &amp; Disclosures</h2>
       <ul>
+        <li>Cabasag, N. V., Chan, V. R., Lim, S. C., Gonzales, M. E., &amp; Cheng, C. (2019). Hate speech in Philippine election-related tweets. <em>Philippine Computing Journal</em>, XIV(1).</li>
+        <li>Cruz, J. C. B., &amp; Cheng, C. (2020). Establishing baselines for text classification in low-resource languages. <em>arXiv:2005.02068</em>.</li>
+        <li>CMSC 170 Laboratory Modules: Lab 04 (Naïve Bayes), Lab 06 (Nearest-Neighbor Model), and Lab 08 (Perceptron).</li>
+      </ul>
+    </section>
+
+  </main>
+
+</body>
+</html>
