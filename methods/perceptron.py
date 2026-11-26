@@ -1,137 +1,177 @@
+from collections import Counter
+
 from preprocess import prepare_data, prepare_tfidf, print_metrics
 
-MAX_EPOCH = 100
-LEARNING_RATE = 0.5
+MAX_EPOCH = 1000
+LEARNING_RATE = 0.001
 BIAS = 0.0
 NORMALIZE = True
+TOP_WORDS = 15
 
-# Perceptron Algorithm
-# Step 1
+# Step 1: initialize the bias and all feature weights to zero.
 def initialization(bias, number_of_features):
-  # Set the weight vector to 0, w0 is our bias
   weights = [bias]
-
   for i in range(number_of_features):
     weights.append(0.0)
-
   return weights
 
-# Step 2
+# Step 2: add the bias feature (index 0) to the sparse tweet vector.
 def activation(vector):
-  # x0 is always 1. x is sparse (index -> value) because there are thousands of words out there
-  # but only a handful actually show up in a tweet. The 0s won't affect our sum or updates anyway.
   x = {0: 1.0}
-
   for index, count in vector.items():
     x[index + 1] = float(count)
-
   return x
 
-# Step 3
+# Step 3: calculate the score and predict -1 or 1.
 def classify(weights, x):
-  v = 0.0
+  score = 0.0
   for index, value in x.items():
-    v += weights[index] * value
+    score += weights[index] * value
+  if score >= 0:
+    return score, 1
+  return score, -1
 
-  if v >= 0:
-    y = 1
-  else:
-    y = -1
-
-  return v, y
-
-# Step 4
-# w(n+1) = w(n) + eta * (d(n) - y(n)) * x(n)
-def update_weight_vector(weights, x, d, y, learning_rate):
+# Step 4: update the weights only when the prediction is wrong.
+def update_weight_vector(weights, x, desired, predicted, learning_rate):
   updated = False
-
-  if y != d:
+  if predicted != desired:
     for index, value in x.items():
-      weights[index] = weights[index] + learning_rate * (d - y) * value
+      weights[index] += learning_rate * (desired - predicted) * value
     updated = True
-
   return weights, updated
 
-# Step 6
+# Step 6: zero updates in an entire epoch means the training set is classified correctly.
 def convergence_check(updates):
-  if updates == 0:
-    return True
-  return False
+  return updates == 0
 
-# Label 0 becomes -1 since our signum function only spits out -1 and 1
+# Dataset labels are 0 and 1; the Perceptron uses -1 and 1.
 def to_desired(label):
-  if label == 1:
-    return 1
-  return -1
+  return 1 if label == 1 else -1
+
+# Count the model's mistakes after an epoch has finished.
+def evaluate_training_errors(vectors, labels, weights):
+  false_positives = 0
+  false_negatives = 0
+
+  for i in range(len(vectors)):
+    _, predicted = classify(weights, activation(vectors[i]))
+    actual = to_desired(labels[i])
+
+    if predicted != actual:
+      if predicted == 1:
+        false_positives += 1
+      else:
+        false_negatives += 1
+
+  errors = false_positives + false_negatives
+  accuracy = (len(labels) - errors) / len(labels) * 100
+  return errors, false_positives, false_negatives, accuracy
+
+# An identical feature vector with both labels cannot be separated by any classifier.
+def count_conflicting_vectors(vectors, labels):
+  seen_labels = {}
+
+  for vector, label in zip(vectors, labels):
+    key = tuple(sorted(vector.items()))
+    if key not in seen_labels:
+      seen_labels[key] = set()
+    seen_labels[key].add(label)
+
+  conflicts = 0
+  for label_set in seen_labels.values():
+    if len(label_set) > 1:
+      conflicts += 1
+  return conflicts
+
+# Count words that appear in incorrectly classified training tweets.
+def most_misclassified_words(vectors, labels, weights, vocabulary, top_n=TOP_WORDS):
+  word_counts = Counter()
+  index_to_word = {index: word for word, index in vocabulary.items()}
+
+  for vector, label in zip(vectors, labels):
+    _, predicted = classify(weights, activation(vector))
+    if predicted != to_desired(label):
+      for index in vector:
+        if index in index_to_word:
+          word_counts[index_to_word[index]] += 1
+
+  return word_counts.most_common(top_n)
+
 
 def perceptron(train_vectors, train_labels, vocab_size):
-  # Step 1
   weights = initialization(BIAS, vocab_size)
   epochs = []
+  history = []
 
   for epoch in range(1, MAX_EPOCH + 1):
     updates = 0
 
     for i in range(len(train_vectors)):
-      # Step 2
       x = activation(train_vectors[i])
-      d = to_desired(train_labels[i])
-
-      # Step 3
-      v, y = classify(weights, x)
-
-      # Step 4
-      weights, updated = update_weight_vector(weights, x, d, y, LEARNING_RATE)
+      desired = to_desired(train_labels[i])
+      _, predicted = classify(weights, x)
+      weights, updated = update_weight_vector(weights, x, desired, predicted, LEARNING_RATE)
       if updated:
         updates += 1
 
-      # Step 5: next training data
-
-    print(f"Epoch {epoch}: {updates} updates")
+    errors, fp, fn, accuracy = evaluate_training_errors(train_vectors, train_labels, weights)
     epochs.append((epoch, updates))
+    history.append({"epoch": epoch, "updates": updates, "errors": errors,
+                    "false_positives": fp, "false_negatives": fn, "accuracy": accuracy})
 
-    # Step 6
+    print(f"Epoch {epoch}: {updates} updates | {errors} errors remain "
+          f"(FP: {fp}, FN: {fn}) | Training accuracy: {accuracy:.2f}%")
+
     if convergence_check(updates):
-      return True, weights, epochs
+      return True, weights, epochs, history
 
-  return False, weights, epochs
+  return False, weights, epochs, history
 
-# Predict labels for a whole list of tweets
+
 def predict_all(vectors, weights):
   predictions = []
-
   for vector in vectors:
-    v, y = classify(weights, activation(vector))
-    # classify() gives us -1 or 1, but our original labels use 0 or 1, so we map -1 back to 0
-    if y == 1:
-      predictions.append(1)
-    else:
-      predictions.append(0)
-
+    _, predicted = classify(weights, activation(vector))
+    predictions.append(1 if predicted == 1 else 0)
   return predictions
 
 
 def main():
-  # Load all the raw text, build the vocabulary, and turn them into Bag-of-Words
   train_vectors, train_labels, valid_vectors, valid_labels, test_vectors, test_labels, vocabulary = prepare_data()
+  train_vectors, valid_vectors, test_vectors = prepare_tfidf(
+    train_vectors, valid_vectors, test_vectors, len(vocabulary), NORMALIZE)
 
-  # Convert word counts into TF-IDF scores so super common words don't mess up our math
-  train_vectors, valid_vectors, test_vectors = prepare_tfidf(train_vectors, valid_vectors, test_vectors, len(vocabulary), NORMALIZE)
-
-  # Train the perceptron
   print(f"\nPERCEPTRON (learning rate = {LEARNING_RATE}, bias = {BIAS}, max epoch = {MAX_EPOCH})")
-  converged, weights, epochs = perceptron(train_vectors, train_labels, len(vocabulary))
+  converged, weights, epochs, history = perceptron(train_vectors, train_labels, len(vocabulary))
 
-  # If updates hit 0 before MAX_EPOCH, it means it found a clean boundary line between the classes
   if converged:
-    print("Data is linearly separable")
+    print("\nConverged: the model classified every training example correctly.")
   else:
-    print("Data may not be linearly separable")
+    print("\nDid not converge: the model still makes training errors at the epoch limit.")
 
-  # Finally, check how well our weights actually perform on data it hasn't learned from yet
-  return {"VALIDATION": print_metrics("VALIDATION", valid_labels, predict_all(valid_vectors, weights)),
-          "TEST": print_metrics("TEST", test_labels, predict_all(test_vectors, weights)),
-          "epochs": epochs}
+  conflicts = count_conflicting_vectors(train_vectors, train_labels)
+  print(f"Identical feature vectors with conflicting labels: {conflicts}")
+  if conflicts:
+    print("These conflicting examples prove that this training representation is not perfectly linearly separable.")
+  else:
+    print("No exact conflicting vectors were found. This does not prove that the full dataset is linearly separable.")
+
+  print(f"\nTOP {TOP_WORDS} WORDS IN MISCLASSIFIED TRAINING TWEETS")
+  top_words = most_misclassified_words(train_vectors, train_labels, weights, vocabulary)
+  if top_words:
+    for word, count in top_words:
+      print(f"{word}: {count} misclassified tweets")
+  else:
+    print("No misclassified training tweets.")
+
+  return {
+    "VALIDATION": print_metrics("VALIDATION", valid_labels, predict_all(valid_vectors, weights)),
+    "TEST": print_metrics("TEST", test_labels, predict_all(test_vectors, weights)),
+    "epochs": epochs,
+    "history": history,
+    "top_misclassified_words": top_words,
+    "conflicting_vectors": conflicts
+  }
 
 
 if __name__ == "__main__":

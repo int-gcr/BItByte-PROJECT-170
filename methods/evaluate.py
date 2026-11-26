@@ -83,9 +83,29 @@ def draw_epochs(results):
   save(fig, "perceptron_epochs.png")
 
 
+def draw_perceptron_errors(results):
+  history = results["Perceptron"]["history"]
+  epoch_numbers = [item["epoch"] for item in history]
+  errors = [item["errors"] for item in history]
+  false_positives = [item["false_positives"] for item in history]
+  false_negatives = [item["false_negatives"] for item in history]
+
+  fig, ax = plt.subplots(figsize=(7, 4))
+  ax.plot(epoch_numbers, errors, label="Total errors")
+  ax.plot(epoch_numbers, false_positives, label="False positives")
+  ax.plot(epoch_numbers, false_negatives, label="False negatives")
+  ax.set_xlabel("Epoch")
+  ax.set_ylabel("Misclassified training tweets")
+  ax.set_title("Perceptron: remaining training errors after each epoch", loc="left", fontsize=10, fontweight="bold")
+  ax.legend()
+  clean_axes(ax)
+  save(fig, "perceptron_error_breakdown.png")
+
+
 def draw_graphs(results):
   draw_k_tuning(results)
   draw_epochs(results)
+  draw_perceptron_errors(results)
 
 
 def main():
