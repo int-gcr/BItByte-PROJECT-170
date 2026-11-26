@@ -67,22 +67,6 @@ def evaluate_training_errors(vectors, labels, weights):
   accuracy = (len(labels) - errors) / len(labels) * 100
   return errors, false_positives, false_negatives, accuracy
 
-# An identical feature vector with both labels cannot be separated by any classifier.
-def count_conflicting_vectors(vectors, labels):
-  seen_labels = {}
-
-  for vector, label in zip(vectors, labels):
-    key = tuple(sorted(vector.items()))
-    if key not in seen_labels:
-      seen_labels[key] = set()
-    seen_labels[key].add(label)
-
-  conflicts = 0
-  for label_set in seen_labels.values():
-    if len(label_set) > 1:
-      conflicts += 1
-  return conflicts
-
 # Count words that appear in incorrectly classified training tweets.
 def most_misclassified_words(vectors, labels, weights, vocabulary, top_n=TOP_WORDS):
   word_counts = Counter()
@@ -149,13 +133,6 @@ def main():
   else:
     print("\nDid not converge: the model still makes training errors at the epoch limit.")
 
-  conflicts = count_conflicting_vectors(train_vectors, train_labels)
-  print(f"Identical feature vectors with conflicting labels: {conflicts}")
-  if conflicts:
-    print("These conflicting examples prove that this training representation is not perfectly linearly separable.")
-  else:
-    print("No exact conflicting vectors were found. This does not prove that the full dataset is linearly separable.")
-
   print(f"\nTOP {TOP_WORDS} WORDS IN MISCLASSIFIED TRAINING TWEETS")
   top_words = most_misclassified_words(train_vectors, train_labels, weights, vocabulary)
   if top_words:
@@ -169,8 +146,7 @@ def main():
     "TEST": print_metrics("TEST", test_labels, predict_all(test_vectors, weights)),
     "epochs": epochs,
     "history": history,
-    "top_misclassified_words": top_words,
-    "conflicting_vectors": conflicts
+    "top_misclassified_words": top_words
   }
 
 
