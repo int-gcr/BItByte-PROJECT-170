@@ -83,9 +83,35 @@ def draw_epochs(results):
   save(fig, "perceptron_epochs.png")
 
 
+def draw_metric_bars(results, split_name, title, file_name):
+  # one group of four bars per method using the numbers printed by print_metrics
+  metric_names = ["Accuracy", "Precision", "Recall", "F1-Score"]
+  metric_colors = ["#3366cc", "#dc3912", "#ff9900", "#109618"]
+  bar_width = 0.2
+
+  fig, ax = plt.subplots(figsize=(7, 4))
+  for m, name in enumerate(metric_names):
+    positions = []
+    values = []
+    for i, method in enumerate(METHODS):
+      positions.append(i + (m - 1.5) * bar_width)
+      values.append(results[method][split_name]["printed"][m])
+    ax.bar(positions, values, bar_width, label=name, color=metric_colors[m])
+
+  ax.set_ylim(55, 85)  # y axis starts at 55 so the differences are visible
+  ax.set_xticks(range(len(METHODS)), METHODS)
+  ax.set_ylabel("Percentage (%)")
+  ax.set_title(title + " (y-axis does not start at 0)", loc="left", fontsize=10, fontweight="bold")
+  ax.legend(loc="upper left", bbox_to_anchor=(1, 1), frameon=False)
+  clean_axes(ax)
+  save(fig, file_name)
+
+
 def draw_graphs(results):
   draw_k_tuning(results)
   draw_epochs(results)
+  draw_metric_bars(results, "VALIDATION", "Validation set comparison", "validbar-graph.png")
+  draw_metric_bars(results, "TEST", "Test set comparison", "test_bar.png")
 
 
 def main():
